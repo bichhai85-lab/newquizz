@@ -213,6 +213,7 @@ const App: React.FC = () => {
             onStartSpecial={startSpecialRound}
             onRestart={restartGame}
             isMuted={isMuted}
+          onSendResult={sendResultToGoogleForm}
         />
       )}
       
