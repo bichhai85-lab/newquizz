@@ -3,7 +3,47 @@ import React, { useEffect } from 'react';
 import { UserInfo, LevelType, CertificateRank } from '../types';
 import { ROBOKI_LOGO_URL, SOUNDS } from '../constants';
 import confetti from 'canvas-confetti';
+const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdow65GWJ2UK-ZpXflAi2GZLhbQbZqHsN9x2pSnZPiwigljjw/formResponse';const ENTRY_ID_NAME = 'entry.1481525944'; // Họ và tênconst ENTRY_ID_GRADE = 'entry.1691236149'; // Xếp loạiconst ENTRY_ID_CLASS = 'entry.1594911765'; // Lớpconst ENTRY_ID_SCORE = 'entry.1384752520'; // Điểm kinh nghiệm// =============================================================// HÀM GỬI DỮ LIỆU ĐẾN GOOGLE FORM// =============================================================function submitQuizResult(studentName: string, studentGrade: string, studentClass: string, finalScore: number) {
 
+let formData = new URLSearchParams();
+
+
+
+
+formData.append(ENTRY_ID_NAME, studentName);
+
+formData.append(ENTRY_ID_GRADE, studentGrade);
+
+formData.append(ENTRY_ID_CLASS, studentClass);
+
+formData.append(ENTRY_ID_SCORE, finalScore.toString());
+
+
+// Gửi dữ liệu
+
+fetch(FORM_URL, {
+
+method: 'POST',
+
+body: formData,
+
+mode: 'no-cors'
+
+})
+
+.then(() => {
+
+console.log("Đã nộp bài về Google Form thành công!");
+
+})
+
+.catch(error => {
+
+console.error("Lỗi khi gửi dữ liệu:", error);
+
+});
+
+}
 interface CertificateScreenProps {
   user: UserInfo;
   rank: string;
@@ -27,7 +67,23 @@ export const CertificateScreen: React.FC<CertificateScreenProps> = ({
 }) => {
     
     // Trigger confetti and sound effect on mount
-    useEffect(() => {
+    useEffect(() => {// 1. Lấy dữ liệu từ các props (đã có sẵn trong component này)
+
+const studentName = user.name; // Lấy tên
+
+const studentClass = user.class; // Lấy Lớp (Giả định 'class' có trong object 'user')
+
+const studentGrade = rank; // Lấy Xếp loại/Hạng
+
+const finalScore = xp; // Lấy Điểm kinh nghiệm (xp)
+
+
+// 2. Gọi hàm gửi dữ liệu
+
+submitQuizResult(studentName, studentGrade, studentClass, finalScore);
+
+
+}, [user, rank, xp]); // Đảm bảo chỉ gửi 1 lần khi các dữ liệu quan trọng này không thay đổi
         if (!isMuted) {
              const audio = new Audio(SOUNDS.CERTIFICATE_SOUND);
              audio.volume = 1.0;
