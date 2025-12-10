@@ -534,5 +534,24 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
+    function sendToGoogleForm() {
+    const hoten = document.getElementById("hoten")?.value || "Chưa nhập";
+    const xeploai = document.getElementById("xeploai")?.value || "Chưa có";
+    const lop = document.getElementById("lop")?.value || "Chưa nhập";
+    const diem = document.getElementById("score")?.innerText || "0";
+
+    const formURL =
+      "https://docs.google.com/forms/d/e/1FAIpQLSdow65GWJ2UK-ZpXflAi2GZLhbQbZqHsN9x2pSnZPiwigljjw/viewform?";
+
+    const fullURL =
+      formURL +
+      "entry.1249042220=" + encodeURIComponent(hoten) +
+      "&entry.266427736=" + encodeURIComponent(xeploai) +
+      "&entry.1514409720=" + encodeURIComponent(lop) +
+      "&entry.1344262595=" + encodeURIComponent(diem);
+
+    window.open(fullURL, "_blank");
+  }
+</script>
 </body>
 </html>
