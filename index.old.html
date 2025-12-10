@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+    <title>Thử Tài Văn Học - Roboki AI</title>
+    <meta name="description" content="Cuộc thi Sáng tạo sản phẩm giáo dục trên nền tảng Roboki AI - THPT Tịnh Biên">
+    
+    <!-- 1. THƯ VIỆN BÊN NGOÀI (CDN) -->
+    <!-- Tailwind CSS: Để style giao diện -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Canvas Confetti: Hiệu ứng pháo giấy -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- React Core: Thư viện xây dựng giao diện -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel: Để trình duyệt hiểu được code React (JSX) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Google Fonts: Font chữ tiếng Việt đẹp -->
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;900&family=Merriweather:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    
+    <!-- 2. CSS TÙY CHỈNH -->
+    <style>
+      /* Cấu hình Font chữ */
+      body { font-family: 'Be Vietnam Pro', sans-serif; -webkit-tap-highlight-color: transparent; }
+      h1, h2, h3, .serif-font, .font-cursive { font-family: 'Merriweather', serif; }
+      
+      /* Scrollbar đẹp */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 4px; }
+      
+      /* Nền giấy Vintage & Hiệu ứng màu nước loang */
+      .bg-container { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; background-color: #fdfbf7; background-image: url("https://www.transparenttextures.com/patterns/cream-paper.png"); overflow: hidden; }
+      .wash { position: absolute; filter: blur(80px); opacity: 0.4; border-radius: 50%; animation: float 20s infinite ease-in-out alternate; }
+      .wash-1 { top: -10%; left: -10%; width: 70vw; height: 70vw; background: radial-gradient(circle, #e0f2fe, #fdfbf7); animation-duration: 25s; }
+      .wash-2 { bottom: -20%; right: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, #fae8ff, #fdfbf7); animation-duration: 30s; animation-direction: alternate-reverse; }
+      .wash-3 { top: 40%; left: 30%; width: 50vw; height: 50vw; background: radial-gradient(circle, #fff7ed, #fdfbf7); animation-duration: 35s; }
+      @keyframes float { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(30px, 20px) rotate(5deg); } }
+      
+      /* Hiệu ứng kính mờ (Glassmorphism) */
+      .glass-panel { background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.6); }
+      
+      /* Animations */
+      @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
+      @keyframes scale-in { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      .animate-scale-in { animation: scale-in 0.4s ease-out forwards; }
+      @keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+      .animate-slide-up { animation: slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+      @keyframes bounce-slow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+      .animate-bounce-slow { animation: bounce-slow 3s infinite ease-in-out; }
+      @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      .animate-spin-slow { animation: spin-slow 12s linear infinite; }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.1/",
+    "react": "https://aistudiocdn.com/react@^19.2.1",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.31.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.1/",
+    "canvas-confetti": "https://aistudiocdn.com/canvas-confetti@^1.9.4"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="h-screen w-screen overflow-hidden text-slate-800 antialiased selection:bg-amber-200 selection:text-amber-900">
+    <!-- Background Layers -->
+    <div class="bg-container">
+        <div class="wash wash-1"></div>
+        <div class="wash wash-2"></div>
+        <div class="wash wash-3"></div>
+    </div>
+    
+    <!-- React Root -->
+    <div id="root" class="h-full w-full relative z-10"></div>
+
+    <!-- 3. MÃ NGUỒN ỨNG DỤNG (REACT) -->
+    <script type="text/babel">
+        /**
+         * ------------------------------------------------------------------
+         * PHẦN 1: DỮ LIỆU & CẤU HÌNH (CONSTANTS)
+         * ------------------------------------------------------------------
+         */
+        const ROBOKI_LOGO_URL = "https://github.com/bichhai85-lab/Roboki/blob/main/bi%E1%BB%83u%20t%C6%B0%E1%BB%A3ng%20roboki.jpg?raw=true";
+        const GAME_LOGO_URL = "https://github.com/bichhai85-lab/Logo/blob/main/logo%20tro%20choi.jpg?raw=true";
+        
+        const SOUNDS = {
+            CORRECT: "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3", 
+            CORRECT_LAYER: "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+            WRONG: "https://assets.mixkit.co/active_storage/sfx/2834/2834-preview.mp3",
+            WRONG_LAYER: "https://assets.mixkit.co/active_storage/sfx/2572/2572-preview.mp3",
+            VICTORY_LEVEL: "https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3",
+            CERTIFICATE_SOUND: "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+            BGM_EPIC: "https://assets.mixkit.co/active_storage/sfx/1004/1004-preview.mp3"
+        };
+
+        const LevelType = {
+            LEVEL_1: 'LEVEL_1',
+            LEVEL_2: 'LEVEL_2',
+            LEVEL_3: 'LEVEL_3',
+            SPECIAL: 'SPECIAL',
+            GRADUATION: 'GRADUATION'
+        };
+
+        const CertificateRank = {
+            DAT: 'ĐẠT',
+            KHA: 'KHÁ',
+            GIOI: 'GIỎI',
+            XUAT_SAC: 'XUẤT SẮC',
+            NHAN_TAI: 'NHÂN TÀI VĂN HỌC',
+            THIEN_TAI: 'THIÊN TÀI VĂN HỌC'
+        };
+
+        const LEVEL_INFO = {
+            [LevelType.LEVEL_1]: { title: "LEVEL 1: THỬ TÀI KHÁI NIỆM", desc: "Kiểm tra kiến thức về các khái niệm cơ bản của thơ như Vần, Tứ thơ, Chủ đề...", passScore: 5, icon: "📖" },
+            [LevelType.LEVEL_2]: { title: "LEVEL 2: THỬ TÀI PHÂN BIỆT", desc: "Phân biệt các cặp khái niệm dễ nhầm lẫn như Hình tượng/Hình ảnh...", passScore: 5, icon: "⚖️" },
+            [LevelType.LEVEL_3]: { title: "LEVEL 3: THỬ TÀI VẬN DỤNG", desc: "Vận dụng kiến thức vào các đoạn thơ cụ thể.", passScore: 5, icon: "✍️" },
+            [LevelType.SPECIAL]: { title: "THỬ THÁCH ĐẶC BIỆT", desc: "Vòng thi dành cho Nhân tài. Phân tích sâu sắc nghệ thuật.", passScore: 5, icon: "🔥" },
+            [LevelType.GRADUATION]: { title: "VÒNG ĐỈNH CAO TRÍ TUỆ", desc: "Thử thách cuối cùng dành cho Thiên tài văn học.", passScore: 5, icon: "🎓" }
+        };
+
+        // --- NGÂN HÀNG CÂU HỎI LỚN (ĐÃ ĐƯỢC MỞ RỘNG ĐỂ RANDOM) ---
+        // Chỉ sử dụng kiến thức từ 13 tác phẩm đã quy định
+        const QUESTION_POOL = {
+            [LevelType.LEVEL_1]: [
+                {content: "\"Vần\" trong thơ có vai trò chính là gì?", options: ["Tạo nên âm hưởng, nhạc điệu và sự liên kết", "Mô tả hành động của nhân vật", "Quy định số lượng từ trong câu", "Là tiêu đề của bài thơ"], correctIndex: 0, explanation: "Vần là sự trùng hợp về âm thanh (thường ở cuối dòng thơ), có vai trò tạo nhạc điệu và gắn kết các dòng thơ với nhau."},
+                {content: "Khái niệm \"Tứ thơ\" được hiểu là gì?", options: ["Cấu trúc hình thức của bài thơ", "Ý tưởng nghệ thuật bao trùm, chi phối toàn bài", "Cách gieo vần của bài thơ", "Số câu trong một khổ thơ"], correctIndex: 1, explanation: "Tứ thơ là ý tưởng nghệ thuật xuyên suốt, là cái 'xương sống' chi phối cấu trúc, hình ảnh và cảm xúc của toàn bộ bài thơ."},
+                {content: "\"Chủ đề\" của tác phẩm thơ là gì?", options: ["Tên gọi của tác giả", "Vấn đề cơ bản, trung tâm được đặt ra trong tác phẩm", "Hoàn cảnh sáng tác cụ thể", "Địa điểm sáng tác"], correctIndex: 1, explanation: "Chủ đề là vấn đề chủ yếu, trung tâm mà tác giả muốn thể hiện và gửi gắm qua văn bản nghệ thuật."},
+                {content: "\"Biện pháp tu từ\" là gì?", options: ["Cách viết sai ngữ pháp cố ý", "Cách sử dụng ngôn ngữ đặc biệt để tăng sức gợi hình, gợi cảm", "Việc sử dụng nhiều từ láy", "Cách chấm câu trong thơ"], correctIndex: 1, explanation: "Biện pháp tu từ là cách vận dụng ngôn ngữ một cách nghệ thuật (như so sánh, ẩn dụ...) để tăng hiệu quả diễn đạt."},
+                {content: "Khái niệm \"Nhân vật trữ tình\" trong thơ là ai?", options: ["Người đọc bài thơ", "Người được nhắc đến trong thơ", "Chủ thể bộc lộ cảm xúc, suy ngẫm trong bài thơ", "Nhà phê bình văn học"], correctIndex: 2, explanation: "Nhân vật trữ tình là người trực tiếp bộc lộ rung động, cảm xúc trong thơ (thường là cái tôi của tác giả hoặc vai tác giả đóng)."},
+                {content: "\"Nhịp thơ\" (tiết tấu) có vai trò gì?", options: ["Làm bài thơ dài hơn", "Tạo ra sự hài hòa âm thanh, ngắt giọng", "Giúp người đọc dễ học thuộc", "Quy định thể loại"], correctIndex: 1, explanation: "Nhịp thơ tạo nên sự ngắt quãng, trầm bổng, góp phần thể hiện cảm xúc."},
+                {content: "\"Thể thơ\" được xác định dựa trên yếu tố nào?", options: ["Số tiếng, số dòng, luật bằng trắc", "Nội dung bài thơ", "Tên tác giả", "Tiêu đề"], correctIndex: 0, explanation: "Thể thơ là quy luật tổ chức văn bản thơ (Lục bát, Thất ngôn...)"},
+                {content: "\"Thi liệu\" là gì?", options: ["Giấy in thơ", "Chất liệu đời sống được đưa vào thơ", "Bút viết thơ", "Nhà xuất bản"], correctIndex: 1, explanation: "Thi liệu là những hình ảnh, sự việc từ thực tế được nhà thơ chọn lọc."},
+                {content: "\"Cấu tứ\" là gì?", options: ["Sắp xếp hình tượng, tổ chức bài thơ", "Đếm số chữ", "Vẽ tranh minh họa", "Đặt tên bài thơ"], correctIndex: 0, explanation: "Cấu tứ là sự tổ chức các yếu tố nghệ thuật để thể hiện tứ thơ."},
+                {content: "\"Ngôn ngữ thơ\" khác ngôn ngữ đời thường ở điểm nào?", options: ["Dài dòng hơn", "Cô đọng, hàm súc, giàu hình ảnh và nhạc điệu", "Khó hiểu", "Sai ngữ pháp"], correctIndex: 1, explanation: "Ngôn ngữ thơ là ngôn ngữ nghệ thuật được chắt lọc tinh tế."}
+            ],
+            [LevelType.LEVEL_2]: [
+                {content: "Điểm khác biệt cơ bản nhất giữa \"Hình tượng nghệ thuật\" và \"Hình ảnh thơ\" là gì?", options: ["Hình tượng mang tính khái quát lớn hơn", "Hình ảnh lớn hơn hình tượng", "Hai khái niệm hoàn toàn giống nhau", "Hình ảnh chỉ có trong văn xuôi"], correctIndex: 0, explanation: "Hình tượng nghệ thuật là khách thể đời sống được nghệ thuật hóa ở tầm khái quát; còn hình ảnh thơ là chi tiết cụ thể cấu thành nên hình tượng đó."},
+                {content: "Phân biệt \"Đề tài\" và \"Chủ đề\"?", options: ["Đề tài là vấn đề cốt lõi", "Đề tài là phạm vi hiện thực được phản ánh, Chủ đề là vấn đề tư tưởng cốt lõi", "Cả hai đều là tên tác phẩm", "Đề tài hẹp hơn chủ đề"], correctIndex: 1, explanation: "Đề tài trả lời câu hỏi 'Viết về cái gì?' (Phạm vi hiện thực), còn Chủ đề trả lời 'Vấn đề gì?' (Tư tưởng toát ra từ hiện thực đó)."},
+                {content: "Sự khác nhau giữa \"Cảm hứng chủ đạo\" và \"Tư tưởng của tác giả\"?", options: ["Không có gì khác nhau", "Cảm hứng chủ đạo là trạng thái tình cảm mãnh liệt bao trùm; Tư tưởng là nhận thức lý trí", "Tư tưởng chỉ xuất hiện ở kết bài", "Cảm hứng chủ đạo chỉ dành cho thơ tình"], correctIndex: 1, explanation: "Cảm hứng chủ đạo là trạng thái cảm xúc, tinh thần bao trùm tác phẩm; trong khi tư tưởng là hệ thống quan điểm, nhận thức của tác giả."},
+                {content: "Mối quan hệ và sự khác biệt giữa \"Nhân vật trữ tình\" và \"Tác giả\"?", options: ["Họ là một người duy nhất", "Nhân vật trữ tình là sự hóa thân nghệ thuật, không hoàn toàn đồng nhất với tác giả ngoài đời", "Tác giả luôn đứng ngoài tác phẩm", "Nhân vật trữ tình là người đọc"], correctIndex: 1, explanation: "Nhân vật trữ tình là 'cái tôi' trong nghệ thuật, có mối liên hệ mật thiết nhưng không phải lúc nào cũng là bản sao y hệt của tác giả ngoài đời thực."},
+                {content: "Phân biệt cơ chế của \"Ẩn dụ\" và \"Hoán dụ\"?", options: ["Ẩn dụ dựa trên tương đồng (giống nhau), Hoán dụ dựa trên tương cận (gần nhau)", "Ẩn dụ dựa trên tương cận, Hoán dụ dựa trên tương đồng", "Ẩn dụ dùng từ 'như', Hoán dụ thì không", "Cả hai đều không có quy luật"], correctIndex: 0, explanation: "Ẩn dụ gọi tên sự vật này bằng tên sự vật khác dựa trên nét tương đồng (giống nhau). Hoán dụ dựa trên quan hệ tương cận (gần gũi, đi đôi với nhau)."},
+                {content: "Sự khác biệt giữa \"Điệp ngữ\" và \"Điệp cấu trúc\"?", options: ["Điệp ngữ lặp từ, Điệp cấu trúc lặp mẫu câu", "Giống hệt nhau", "Điệp ngữ lặp cả câu", "Điệp cấu trúc lặp âm"], correctIndex: 0, explanation: "Điệp ngữ là lặp lại từ/ngữ, còn điệp cấu trúc là lặp lại kiểu câu/mô hình cú pháp."},
+                {content: "Phân biệt \"So sánh\" và \"Ẩn dụ\"?", options: ["Ẩn dụ là so sánh ngầm (ẩn vế A)", "So sánh không có từ 'như'", "Ẩn dụ luôn có từ 'như'", "So sánh khó hơn"], correctIndex: 0, explanation: "So sánh đối chiếu A với B (có 2 vế). Ẩn dụ che đi A, chỉ còn B (quy chiếu)."},
+                {content: "Khác biệt giữa \"Hiện thực\" và \"Lãng mạn\" trong thơ?", options: ["Hiện thực bám sát đời sống; Lãng mạn bay bổng, lý tưởng hóa", "Hiện thực buồn hơn", "Lãng mạn không có thật", "Hiện thực chỉ viết về chiến tranh"], correctIndex: 0, explanation: "Cảm hứng lãng mạn thường tô đậm vẻ đẹp phi thường, vượt lên trên hiện thực trần trụi."},
+                {content: "Phân biệt \"Nhịp chẵn\" và \"Nhịp lẻ\"?", options: ["Nhịp chẵn êm đềm; Nhịp lẻ biến đổi, dồn dập", "Không ảnh hưởng", "Nhịp lẻ buồn hơn", "Nhịp chẵn vui hơn"], correctIndex: 0, explanation: "Nhịp chẵn tạo sự cân đối, hài hòa. Nhịp lẻ thường tạo ấn tượng mạnh, phá cách."},
+                {content: "Phân biệt \"Không gian nghệ thuật\" và \"Địa điểm thực tế\"?", options: ["Không gian nghệ thuật mang tính quan niệm, cảm xúc", "Địa điểm thực tế đẹp hơn", "Không gian nghệ thuật phải rộng lớn", "Giống hệt nhau"], correctIndex: 0, explanation: "Không gian nghệ thuật là môi trường hoạt động của hình tượng do tác giả sáng tạo qua lăng kính chủ quan."}
+            ],
+            [LevelType.LEVEL_3]: [
+                {content: "Trong đoạn thơ \"Sương chùng chình qua ngõ / Hình như thu đã về\" (Sang Thu - Hữu Thỉnh), từ láy \"chùng chình\" có tác dụng gì?", options: ["Diễn tả làn sương dày đặc", "Gợi cảm giác làn sương như có tâm hồn, đang ngập ngừng", "Mô tả tốc độ nhanh", "Không có ý nghĩa"], correctIndex: 1, explanation: "Từ láy 'chùng chình' nhân hóa làn sương như người, cố ý chậm lại, chưa muốn tan đi.", citation: "Sang Thu - Hữu Thỉnh"},
+                {content: "Câu thơ \"Mặt trời xuống biển như hòn lửa\" (Đoàn thuyền đánh cá) sử dụng biện pháp tu từ gì?", options: ["Làm giảm sức nóng", "So sánh cực tả vẻ đẹp hùng vĩ", "Gây cười", "Nhân hóa"], correctIndex: 1, explanation: "So sánh 'mặt trời' với 'hòn lửa' giúp cực tả vẻ đẹp rực rỡ, khổng lồ của hoàng hôn.", citation: "Đoàn thuyền đánh cá - Huy Cận"},
+                {content: "Hai câu \"Làn thu thủy nét xuân sơn / Hoa ghen thua thắm liễu hờn kém xanh\" khắc họa vẻ đẹp nào?", options: ["Vẻ đẹp phúc hậu", "Vẻ đẹp sắc sảo, mặn mà, khiến thiên nhiên đố kỵ", "Vẻ đẹp giản dị", "Vẻ đẹp khỏe khoắn"], correctIndex: 1, explanation: "Dùng thiên nhiên để gợi tả vẻ đẹp tuyệt mỹ của Kiều, dự báo số phận sóng gió.", citation: "Truyện Kiều - Nguyễn Du"},
+                {content: "Trong bài \"Bếp lửa\", các từ ngữ \"chờn vờn\", \"ấp iu\" gợi lên cảm giác gì?", options: ["Lạnh lẽo", "Sợ hãi", "Sự ấm áp, thương yêu trìu mến", "Ngột ngạt"], correctIndex: 2, explanation: "Gợi tả sự chăm chút ngọn lửa và tình cảm ấm áp bà cháu.", citation: "Bếp lửa - Bằng Việt"},
+                {content: "Hình ảnh \"chiếc khăn\" trong \"Đất Nước\" (Nguyễn Khoa Điềm) được gợi ý từ đâu?", options: ["Truyền thuyết", "Ca dao về tình yêu đôi lứa", "Sử thi", "Cổ tích"], correctIndex: 1, explanation: "Vận dụng ý tứ ca dao 'Khăn thương nhớ ai...' để nói về nỗi nhớ thầm kín.", citation: "Đất Nước - Nguyễn Khoa Điềm"},
+                {content: "\"Sông không hiểu nổi mình / Sóng tìm ra tận bể\" (Xuân Quỳnh) thể hiện điều gì?", options: ["Sự lạc lõng", "Khát vọng vươn tới cái lớn lao, đích thực", "Sợ hãi", "Thích đi chơi"], correctIndex: 1, explanation: "Hành trình từ sông ra bể là hành trình tìm kiếm tình yêu đích thực, rộng lớn.", citation: "Sóng - Xuân Quỳnh"},
+                {content: "\"Vườn ai mướt quá xanh như ngọc\" (Đây thôn Vĩ Dạ) gợi tả vẻ đẹp gì?", options: ["Tươi non, trong trẻo, tràn đầy sức sống", "Sang trọng", "Rậm rạp", "Nhân tạo"], correctIndex: 0, explanation: "Gợi vẻ đẹp trinh nguyên, mỡ màng của thiên nhiên thôn Vĩ.", citation: "Đây thôn Vĩ Dạ - Hàn Mặc Tử"},
+                {content: "\"Đất Nước là máu xương của mình\" sử dụng biện pháp tu từ gì?", options: ["So sánh", "Ẩn dụ định nghĩa", "Nhân hóa", "Liệt kê"], correctIndex: 1, explanation: "Khẳng định sự gắn bó ruột thịt, không thể tách rời giữa cá nhân và Đất Nước.", citation: "Đất Nước - Nguyễn Khoa Điềm"},
+                {content: "\"Củi một cành khô lạc mấy dòng\" (Tràng Giang) gợi cảm giác gì?", options: ["Nhỏ bé, trôi nổi, vô định", "Mạnh mẽ", "Vui tươi", "Đông đúc"], correctIndex: 0, explanation: "Hình ảnh cành củi khô gợi kiếp người nhỏ bé, bơ vơ giữa dòng đời mênh mông.", citation: "Tràng Giang - Huy Cận"},
+                {content: "\"Quân xanh màu lá dữ oai hùm\" (Tây Tiến) miêu tả hình ảnh gì?", options: ["Quân phục", "Vẻ xanh xao vì bệnh nhưng vẫn oai phong", "Quân đội yếu", "Rừng núi"], correctIndex: 1, explanation: "Tả thực bệnh sốt rét (quân xanh) nhưng dùng từ Hán Việt (dữ oai hùm) để tô đậm khí phách.", citation: "Tây Tiến - Quang Dũng"}
+            ],
+            [LevelType.SPECIAL]: [
+                 {content: "Trong \"Tây Tiến\", bút pháp nghệ thuật nào chủ đạo?", options: ["Tả thực", "Lãng mạn kết hợp bi tráng", "Trào phúng", "Siêu thực"], correctIndex: 1, explanation: "Cảm hứng lãng mạn tô đậm vẻ đẹp hào hoa, phi thường của người lính.", citation: "Tây Tiến - Quang Dũng"},
+                 {content: "Quan niệm nhân sinh trong câu \"Mau đi thôi! Mùa chưa ngả chiều hôm\"?", options: ["Sống chậm", "Tu hành", "Sống gấp gáp, tận hưởng tuổi trẻ", "Hy sinh"], correctIndex: 2, explanation: "Xuân Diệu cổ vũ lối sống chạy đua với thời gian để tận hưởng cuộc sống.", citation: "Vội vàng - Xuân Diệu"},
+                 {content: "Hình tượng \"Sóng\" và \"Em\" có mối quan hệ gì?", options: ["Đơn lẻ", "Song hành, tuy hai mà một", "Đối lập", "Phản diện"], correctIndex: 1, explanation: "Sóng là hình ảnh ẩn dụ để soi chiếu tâm hồn Em.", citation: "Sóng - Xuân Quỳnh"},
+                 {content: "Khổ đầu \"Đây thôn Vĩ Dạ\" mở ra khung cảnh nào?", options: ["U ám", "Tươi sáng, trong trẻo, tình tứ", "Hùng vĩ", "Hoang tàn"], correctIndex: 1, explanation: "Bức tranh thiên nhiên thôn Vĩ buổi sớm mai đẹp như tranh.", citation: "Đây thôn Vĩ Dạ"},
+                 {content: "\"Ánh trăng im phăng phắc\" (Nguyễn Duy) gợi điều gì?", options: ["Trăng tối", "Nghiêm khắc", "Nhân chứng nghĩa tình, nghiêm khắc thức tỉnh lương tâm", "Trăng lặn"], correctIndex: 2, explanation: "Sự im lặng của trăng làm con người giật mình nhìn lại chính mình.", citation: "Ánh trăng"},
+                 {content: "\"Sóng đã cài then, đêm sập cửa\" dùng biện pháp gì?", options: ["Nhân hóa", "So sánh", "Hoán dụ", "Ẩn dụ"], correctIndex: 0, explanation: "Vũ trụ như ngôi nhà lớn đi vào trạng thái nghỉ ngơi, gần gũi với con người.", citation: "Đoàn thuyền đánh cá"},
+                 {content: "\"Hoa ghen thua thắm liễu hờn kém xanh\" dự báo điều gì?", options: ["Tài năng", "Bình yên", "Số phận sóng gió, bị đố kỵ", "Sức khỏe"], correctIndex: 2, explanation: "Thuyết 'Tài mệnh tương đố' - vẻ đẹp quá hoàn hảo sẽ bị ghhen ghét.", citation: "Truyện Kiều"},
+                 {content: "\"Đêm mơ Hà Nội dáng kiều thơm\" thể hiện vẻ đẹp nào của lính Tây Tiến?", options: ["Hào hoa, lãng mạn", "Chân chất", "Khắc khổ", "Giản dị"], correctIndex: 0, explanation: "Tâm hồn mộng mơ, lãng mạn ngay giữa chiến trường khốc liệt.", citation: "Tây Tiến"},
+                 {content: "\"Phải biết gắn bó và san sẻ\" (Đất Nước) nhắn nhủ điều gì?", options: ["Trách nhiệm công dân", "Quyền lợi", "Làm giàu", "Du lịch"], correctIndex: 0, explanation: "Trách nhiệm của cá nhân đối với cộng đồng, đất nước.", citation: "Đất Nước"},
+                 {content: "\"Tôi muốn buộc gió lại\" thể hiện cái tôi thế nào?", options: ["Nhút nhát", "Ngông cuồng, khát khao mãnh liệt", "Khiêm tốn", "Buồn"], correctIndex: 1, explanation: "Cái tôi muốn đoạt quyền tạo hóa để giữ mãi vẻ đẹp.", citation: "Vội vàng"}
+            ],
+            [LevelType.GRADUATION]: [
+                 {content: "\"Làm sao tan được giữa muôn trùng sóng bể\" (Sóng) là khát vọng gì?", options: ["Tự tử", "Trốn tránh", "Hóa thân vào tình yêu vĩnh cửu", "Du lịch"], correctIndex: 2, explanation: "Khát vọng được dâng hiến để tình yêu trở nên bất tử.", citation: "Sóng - Xuân Quỳnh"},
+                 {content: "Hình ảnh \"Sấm cũng bớt bất ngờ / Trên hàng cây đứng tuổi\" ẩn dụ cho?", options: ["Thiên nhiên", "Sấm ít đi", "Sự điềm tĩnh, vững vàng của người từng trải", "Cây già"], correctIndex: 2, explanation: "Bản lĩnh con người khi đã sang thu của cuộc đời.", citation: "Sang thu - Hữu Thỉnh"},
+                 {content: "Đoạn \"Làn thu thủy nét xuân sơn...\" dùng bút pháp nghệ thuật nào?", options: ["Tả thực", "Ước lệ tượng trưng", "Trào phúng", "Hiện thực"], correctIndex: 1, explanation: "Dùng vẻ đẹp thiên nhiên làm chuẩn mực để gợi tả vẻ đẹp con người (cổ điển).", citation: "Truyện Kiều"},
+                 {content: "\"Câu hát căng buồm cùng gió khơi\" thể hiện tinh thần gì?", options: ["Mệt mỏi", "Hào hứng, làm chủ thiên nhiên", "Lo sợ", "Bắt buộc"], correctIndex: 1, explanation: "Khí thế phơi phới, tư thế chủ động của người lao động mới.", citation: "Đoàn thuyền đánh cá"},
+                 {content: "Chuỗi câu \"Tôi muốn tắt nắng... Tôi muốn buộc gió\" dùng biện pháp gì?", options: ["Điệp ngữ, động từ mạnh", "So sánh", "Nhân hóa", "Ẩn dụ"], correctIndex: 0, explanation: "Nhấn mạnh khát vọng mãnh liệt của cái tôi trữ tình.", citation: "Vội vàng"},
+                 {content: "\"Hồn về Sầm Nưa chẳng về xuôi\" thể hiện tinh thần nào?", options: ["Nhớ nhà", "Quyết tử cho tổ quốc quyết sinh", "Du lịch", "Sợ hãi"], correctIndex: 1, explanation: "Tinh thần dấn thân, hiến dâng trọn vẹn cho lý tưởng.", citation: "Tây Tiến"},
+                 {content: "\"Em không biết sóng bắt đầu từ đâu\" gợi lên điều gì?", options: ["Thiếu hiểu biết", "Sự bí ẩn, diệu kỳ của tình yêu", "Sóng thần", "Địa lý"], correctIndex: 1, explanation: "Cắt nghĩa tình yêu là điều không thể lý giải bằng logic thông thường.", citation: "Sóng"},
+                 {content: "\"Đầu lòng hai ả tố nga\" - \"Tố nga\" nghĩa là gì?", options: ["Người con gái đẹp", "Mặt trăng", "Hằng Nga", "Người hầu"], correctIndex: 0, explanation: "Từ Hán Việt chỉ người con gái đẹp.", citation: "Truyện Kiều"},
+                 {content: "\"Lòng quê dợn dợn vời con nước\" (Tràng Giang) diễn tả tâm trạng gì?", options: ["Say sóng", "Nỗi nhớ nhà da diết, triền miên", "Vui vẻ", "Háo hức"], correctIndex: 1, explanation: "Nỗi buồn, nỗi nhớ quê hương dâng lên theo từng con sóng.", citation: "Tràng Giang"},
+                 {content: "\"Thôi đã hết rồi thời bím tóc trắng ngời\" gợi cảm xúc gì?", options: ["Sự hối tiếc, hoài niệm tuổi học trò", "Muốn cắt tóc", "Thích tóc đen", "Mất kẹp tóc"], correctIndex: 0, explanation: "Sự tiếc nuối ngậm ngùi về thời gian và tuổi học trò trong sáng đã qua.", citation: "Chiếc lá đầu tiên"}
+            ]
+        };
+
+        /**
+         * ------------------------------------------------------------------
+         * PHẦN 2: LOGIC XỬ LÝ (HOOKS & FUNCTIONS)
+         * ------------------------------------------------------------------
+         */
+
+        // --- COMPONENTS ---
+
+        // 1. COMPONENT: LAYOUT (Bố cục chung)
+        const Layout = ({ children, isMuted, onToggleMute, xp, userName }) => {
+            const [isScrolled, setIsScrolled] = React.useState(false);
+            const mainRef = React.useRef(null);
+            
+            React.useEffect(() => {
+                const handleScroll = () => { if (mainRef.current) setIsScrolled(mainRef.current.scrollTop > 10); };
+                const el = mainRef.current;
+                if (el) el.addEventListener('scroll', handleScroll);
+                return () => el && el.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                <div className="relative flex flex-col h-[100dvh] w-full font-sans overflow-hidden">
+                    <header className={`flex-none w-full glass-panel shadow-sm p-2 z-50 flex justify-between items-center gap-2 px-3 md:px-6 transition-all duration-500 relative ${isScrolled ? 'bg-white/95 backdrop-blur-xl shadow-md py-1' : 'bg-white/70 py-2'}`}>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                            <h2 className={`text-[9px] md:text-[11px] font-bold text-slate-500 tracking-wide uppercase truncate transition-all ${isScrolled ? 'h-0 opacity-0 mb-0' : 'h-auto opacity-100 mb-0.5'}`}>CÔNG TY TNHH TƯ VẤN VÀ PHÁT TRIỂN GIÁO DỤC INNEDU</h2>
+                            <h1 className="text-[10px] md:text-[14px] font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-700 to-indigo-700 serif-font leading-tight line-clamp-2 md:line-clamp-none">CUỘC THI SÁNG TẠO SẢN PHẨM GIÁO DỤC TRÊN NỀN TẢNG ROBOKI AI</h1>
+                        </div>
+                        <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
+                            {userName && (
+                                <div className="flex items-center gap-1.5 bg-gradient-to-br from-yellow-50 to-amber-100 border border-yellow-300 rounded-full pl-1 pr-3 py-0.5 shadow-sm">
+                                    <div className="bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-full p-1 shadow-inner text-[10px]">★</div>
+                                    <span className="text-sm md:text-lg font-black text-amber-700 tabular-nums">{xp}</span>
+                                </div>
+                            )}
+                            <button onClick={onToggleMute} className="p-2 rounded-full bg-white/50 border border-slate-200">
+                                {isMuted ? "🔇" : "🔊"}
+                            </button>
+                            <img src={ROBOKI_LOGO_URL} alt="Logo" className={`w-8 h-8 md:w-12 md:h-12 rounded-full border border-white shadow-md bg-white object-cover ${isScrolled ? 'animate-[spin_12s_linear_infinite]' : ''}`} />
+                        </div>
+                    </header>
+                    <main ref={mainRef} className="flex-1 w-full overflow-y-auto overflow-x-hidden relative scroll-smooth">
+                        <div className="min-h-full w-full max-w-5xl mx-auto flex flex-col items-center justify-center p-3 pb-20 md:p-6">{children}</div>
+                    </main>
+                    <footer className="hidden md:block absolute bottom-1 text-center w-full px-4 mix-blend-multiply pointer-events-none">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-60">Đặng Thị Bích Hài - THPT Tịnh Biên, An Giang</p>
+                    </footer>
+                </div>
+            );
+        };
+
+        // 2. COMPONENT: INTRO (Màn hình nhập thông tin)
+        const IntroScreen = ({ onStart }) => {
+            const [data, setData] = React.useState({name: '', className: '', school: ''});
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                const audio = new Audio(SOUNDS.CORRECT); audio.volume=0.5; audio.play().catch(()=>{});
+                onStart(data);
+            };
+            return (
+                <div className="glass-panel rounded-[2rem] shadow-2xl p-8 md:p-12 animate-fade-in mx-auto max-w-md w-full relative overflow-hidden border border-white/60">
+                    <div className="flex flex-col items-center mb-8">
+                        <img src={ROBOKI_LOGO_URL} className="w-28 h-28 mb-6 rounded-full shadow-2xl border-4 border-white object-cover animate-bounce-slow" />
+                        <h1 className="text-3xl font-black text-slate-800 text-center uppercase mb-2 serif-font">Thử Tài <span className="text-blue-600">Văn Học</span></h1>
+                        <p className="text-center text-slate-600 font-medium mb-3">Cùng Roboki AI chinh phục đỉnh cao tri thức!</p>
+                        <div className="flex gap-3 bg-white/60 px-4 py-1.5 rounded-full shadow-sm text-xs font-bold text-slate-600"><span>📚 3 Cấp độ</span><span>|</span><span>⚡ 5 Câu hỏi/Vòng</span></div>
+                    </div>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="space-y-1">
+                             <label className="text-xs font-black uppercase text-blue-900 ml-1">Họ và Tên</label>
+                             <input required placeholder="Nhập họ tên..." className="w-full px-4 py-3 rounded-xl border border-slate-300 font-bold" value={data.name} onChange={e=>setData({...data, name: e.target.value})} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-black uppercase text-blue-900 ml-1">Lớp</label>
+                                <input required placeholder="VD: 12A1" className="w-full px-4 py-3 rounded-xl border border-slate-300 font-bold" value={data.className} onChange={e=>setData({...data, className: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-black uppercase text-blue-900 ml-1">Trường</label>
+                                <input required placeholder="Tên trường..." className="w-full px-4 py-3 rounded-xl border border-slate-300 font-bold" value={data.school} onChange={e=>setData({...data, school: e.target.value})} />
+                            </div>
+                        </div>
+                        <button type="submit" className="w-full mt-4 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl shadow-lg hover:scale-[1.02] transition-all border-b-4 border-blue-800 active:border-b-0 active:translate-y-1">BẮT ĐẦU</button>
+                    </form>
+                </div>
+            );
+        };
+
+        // 3. COMPONENT: ROADMAP (Lộ trình)
+        const RoadmapScreen = ({ user, xp, completionCount, onContinue }) => {
+            const renderLevel = (lvl, locked, next, titleOverride) => {
+                const info = LEVEL_INFO[lvl];
+                let cls = "p-4 rounded-2xl border-2 transition-all flex flex-col gap-2 ";
+                cls += locked ? "bg-slate-50 border-slate-200 opacity-60 grayscale" : next ? "bg-white border-blue-400 shadow-lg scale-105 ring-4 ring-blue-100 z-10 cursor-pointer" : "bg-white border-slate-200 shadow-sm cursor-pointer";
+                if(!locked && lvl === LevelType.SPECIAL) cls = "p-4 rounded-2xl border-2 border-yellow-400 bg-yellow-50 shadow-lg scale-105 z-10 animate-pulse-slow cursor-pointer";
+                if(!locked && lvl === LevelType.GRADUATION) cls = "p-4 rounded-2xl border-2 border-cyan-400 bg-cyan-50 shadow-lg scale-105 z-10 cursor-pointer";
+
+                return (
+                    <div className={cls} onClick={!locked ? onContinue : undefined}>
+                        <div className="flex justify-between items-start">
+                            <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl border bg-white">{info.icon}</div>
+                            {locked ? <span className="text-xs font-bold bg-slate-200 text-slate-500 px-2 py-1 rounded">Khóa</span> : next && <span className="text-xs font-bold bg-blue-100 text-blue-700 px-2 py-1 rounded">Tiếp theo</span>}
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-sm md:text-base text-slate-800">{titleOverride || info.title.split(': ')[1] || info.title}</h3>
+                            <p className="text-[10px] text-slate-500 line-clamp-2 mt-1">{info.desc}</p>
+                        </div>
+                        <div className="mt-auto pt-2 flex gap-1">
+                            {[1,2,3,4,5].map(i => <div key={i} className={`h-1.5 flex-1 rounded-full ${locked?'bg-slate-200':next?'bg-blue-200':'bg-green-200'}`}></div>)}
+                        </div>
+                    </div>
+                );
+            };
+            return (
+                <div className="w-full max-w-4xl mx-auto flex flex-col h-full animate-fade-in pb-12">
+                    <div className="text-center mb-6">
+                        <h2 className="text-2xl md:text-4xl font-black text-slate-800 uppercase serif-font mb-2">Lộ Trình Chinh Phục</h2>
+                        <div className="flex flex-col md:flex-row items-center justify-center gap-2 font-medium text-slate-600">
+                             <p>Xin chào, <span className="text-blue-700 font-bold">{user.name}</span>!</p>
+                             <div className="flex items-center gap-1 bg-amber-100 px-3 py-1 rounded-full border border-amber-200 text-amber-800 font-black">★ {xp} XP</div>
+                        </div>
+                    </div>
+                    <div className="flex-1 overflow-y-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div onClick={onContinue}>{renderLevel(LevelType.LEVEL_1, false, true)}</div>
+                        <div className="opacity-70">{renderLevel(LevelType.LEVEL_2, true, false)}</div>
+                        <div className="opacity-70 relative">
+                             {renderLevel(LevelType.LEVEL_3, true, false)}
+                             {completionCount < 9 && completionCount >= 7 && <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-100 text-yellow-800 text-xs p-1 rounded border border-yellow-300">Sắp mở khóa Nhân Tài!</div>}
+                        </div>
+                    </div>
+                    <div className="mt-8 flex justify-center">
+                        <button onClick={onContinue} className="px-10 py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xl rounded-full shadow-xl animate-pulse hover:animate-none transform hover:scale-105 transition-all">BẮT ĐẦU CHINH PHỤC</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // 4. COMPONENT: LEVEL INTRO (Giới thiệu màn chơi)
+        const LevelIntroScreen = ({ level, onStart }) => {
+            const info = LEVEL_INFO[level];
+            const generateHTML = () => {
+                const qs = QUESTION_POOL[level] || []; // Use full pool for offline download
+                let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Bài tập Offline ${level}</title></head><body><h1>${info.title}</h1>`;
+                qs.slice(0, 10).forEach((q,i) => { 
+                    html += `<div style="margin-bottom:20px; border:1px solid #ccc; padding:10px;"><h3>Câu ${i+1}: ${q.content}</h3><ul>${q.options.map(o=>`<li>${o}</li>`).join('')}</ul><p><i>Đáp án đúng: ${String.fromCharCode(65+q.correctIndex)}</i></p><p>${q.explanation}</p></div>`;
+                });
+                html += "<script type="module" src="/index.tsx"></script>
+</body></html>";
+                const blob = new Blob([html], {type: 'text/html'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = `BaiTap_${level}.html`; a.click();
+            };
+            return (
+                <div className="w-full max-w-lg mx-auto p-8 rounded-[2rem] shadow-2xl animate-scale-in border-4 border-blue-200 bg-white text-center">
+                    <div className="w-24 h-24 mb-6 rounded-full flex items-center justify-center text-6xl shadow-inner bg-blue-100 mx-auto">{info.icon}</div>
+                    <h2 className="text-3xl font-black uppercase text-blue-900 serif-font mb-3">{info.title}</h2>
+                    <p className="text-slate-600 font-medium text-lg mb-8">{info.desc}</p>
+                    <div className="mb-6 bg-slate-100 px-4 py-2 rounded-lg inline-block"><span className="font-bold text-slate-500">Mục tiêu:</span> <span className="font-black text-blue-700">5/5 Câu</span></div>
+                    <button onClick={onStart} className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xl rounded-2xl shadow-lg hover:scale-105 transition-all mb-4 border-b-4 border-blue-800 active:border-b-0 active:translate-y-1">BẮT ĐẦU</button>
+                    <button onClick={generateHTML} className="text-sm text-slate-500 underline hover:text-blue-600">Tải đề Offline (HTML)</button>
+                </div>
+            );
+        };
+
+        // 5. COMPONENT: QUIZ (Màn hình câu hỏi)
+        const QuizScreen = ({ level, questions, questionIndex, onAnswer, onNext, isMuted }) => {
+            const q = questions[questionIndex];
+            const [selected, setSelected] = React.useState(null);
+            const [answered, setAnswered] = React.useState(false);
+            const [isCorrect, setIsCorrect] = React.useState(false);
+            const scrollRef = React.useRef(null);
+
+            React.useEffect(() => { setSelected(null); setAnswered(false); setIsCorrect(false); }, [q]);
+            
+            // Auto scroll to feedback
+            React.useEffect(() => {
+                if(answered && scrollRef.current) {
+                    setTimeout(() => scrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' }), 100);
+                }
+            }, [answered]);
+
+            const handleOpt = (idx) => {
+                if(answered) return;
+                const correct = idx === q.correctIndex;
+                setSelected(idx); setAnswered(true); setIsCorrect(correct);
+                onAnswer(correct);
+                if(!isMuted) {
+                    const audio = new Audio(correct ? SOUNDS.CORRECT : SOUNDS.WRONG);
+                    audio.volume = correct ? 1.0 : 0.8; 
+                    audio.play().catch(()=>{});
+                    if(correct) {
+                        setTimeout(() => { new Audio(SOUNDS.CORRECT_LAYER).play().catch(()=>{}); }, 100);
+                        confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+                    } else {
+                         setTimeout(() => { new Audio(SOUNDS.WRONG_LAYER).play().catch(()=>{}); }, 100);
+                    }
+                }
+            };
+
+            const themeColor = level === LevelType.LEVEL_3 ? "purple" : level === LevelType.SPECIAL ? "orange" : level === LevelType.GRADUATION ? "cyan" : "blue";
+
+            return (
+                <div className="w-full max-w-4xl mx-auto flex flex-col gap-2 pb-16">
+                     <div className={`glass-panel px-4 py-2 rounded-xl shadow-sm border border-${themeColor}-200 flex justify-between items-center`}>
+                        <span className={`font-black uppercase text-sm text-${themeColor}-800`}>{level}</span>
+                        <div className="flex-1 mx-4 h-2 bg-slate-200 rounded-full"><div className={`h-full rounded-full bg-${themeColor}-500 transition-all`} style={{width: `${(questionIndex+1)/questions.length*100}%`}}></div></div>
+                        <span className="font-bold text-xs bg-white px-2 py-1 rounded-full">{questionIndex+1}/{questions.length}</span>
+                     </div>
+                     
+                     <div className={`bg-white rounded-lg p-4 border-b-4 border-${themeColor}-100 shadow-md min-h-[100px] flex items-center justify-center relative`}>
+                        <h2 className="text-base md:text-2xl font-bold text-slate-800 text-center serif-font">{q.content}</h2>
+                     </div>
+
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {q.options.map((opt, i) => {
+                            let cls = "relative p-3 rounded-lg text-sm md:text-base font-medium transition-all shadow-sm min-h-[50px] flex items-center justify-center text-center border border-b-2 ";
+                            if(answered) {
+                                cls += i===q.correctIndex ? "bg-green-50 border-green-500 text-green-800" : i===selected ? "bg-red-50 border-red-500 text-red-800" : "bg-slate-50 border-slate-200 opacity-50";
+                            } else {
+                                cls += `bg-white border-${themeColor}-100 hover:border-${themeColor}-400 hover:shadow-md cursor-pointer active:scale-95`;
+                            }
+                            return (
+                                <button key={i} onClick={()=>handleOpt(i)} disabled={answered} className={cls}>
+                                    {opt}
+                                    <span className="absolute top-1 left-2 text-[10px] text-slate-400 font-bold">{String.fromCharCode(65+i)}</span>
+                                </button>
+                            );
+                        })}
+                     </div>
+
+                     {answered && (
+                         <div ref={scrollRef} className={`animate-slide-up rounded-xl p-4 border-l-4 ${isCorrect ? 'bg-green-50 border-green-500' : 'bg-red-50 border-red-500'} shadow-lg mb-4`}>
+                             <div className="flex items-center gap-3 mb-2">
+                                 <div className="text-3xl">{isCorrect ? '🌸' : '🤡'}</div>
+                                 <h3 className={`font-black uppercase ${isCorrect ? 'text-green-700' : 'text-red-700'}`}>{isCorrect ? "Chính xác!" : "Sai rồi!"}</h3>
+                             </div>
+                             <p className="text-slate-800 text-sm md:text-base font-medium mb-3">{q.explanation}</p>
+                             {q.citation && <div className="text-xs text-slate-500 italic border-t border-slate-200 pt-2">📖 Nguồn: {q.citation}</div>}
+                             <button onClick={onNext} className={`w-full py-3 mt-2 bg-${themeColor}-600 text-white font-bold rounded-xl shadow-md hover:scale-105 transition-all`}>KẾ TIẾP</button>
+                         </div>
+                     )}
+                </div>
+            );
+        };
+
+        // 6. COMPONENT: RESULT (Kết quả)
+        const LevelResultScreen = ({ score, total, level, onNext, onRetry, isMuted }) => {
+            const isPass = score === total;
+            React.useEffect(() => { 
+                if(isPass && !isMuted) { new Audio(SOUNDS.VICTORY_LEVEL).play().catch(()=>{}); }
+            }, [isPass]);
+            return (
+                <div className="glass-panel rounded-[2rem] shadow-2xl p-8 max-w-lg w-full text-center mx-auto border border-white/60 animate-scale-in">
+                     <div className="text-8xl mb-4 animate-bounce">{isPass ? '🏆' : '💪'}</div>
+                     <h2 className={`text-4xl font-black mb-2 uppercase ${isPass ? 'text-green-600' : 'text-orange-500'}`}>{isPass ? 'HOÀN THÀNH!' : 'CỐ GẮNG LÊN!'}</h2>
+                     <p className="text-xl font-bold text-slate-700 mb-6">{score}/{total} câu</p>
+                     {isPass ? (
+                         <button onClick={onNext} className="w-full py-4 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-2xl shadow-lg hover:scale-105 transition-all">TIẾP TỤC</button>
+                     ) : (
+                         <button onClick={onRetry} className="w-full py-4 bg-slate-700 text-white font-bold rounded-2xl shadow-lg hover:bg-slate-600 transition-all">LÀM LẠI BÀI TẬP</button>
+                     )}
+                </div>
+            );
+        };
+
+        // 7. COMPONENT: CERTIFICATE (Giấy chứng nhận)
+        const CertificateScreen = ({ user, rank, xp, completionCount, onRestart, isMuted }) => {
+            React.useEffect(() => {
+                if(!isMuted) new Audio(SOUNDS.CERTIFICATE_SOUND).play().catch(()=>{});
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ['#FFD700'] });
+            }, []);
+            
+            // Logic: Chiến thắng lần 1, 2, 3...
+            let title = "CHIẾN THẮNG ĐẦU TIÊN";
+            if(completionCount>=9) title = "CHIẾN THẮNG LẦN 4 - HUY CHƯƠNG KIM CƯƠNG";
+            else if(completionCount>=6) title = "CHIẾN THẮNG LẦN 3 - NHÀ VÔ ĐỊCH";
+            else if(completionCount>=3) title = "CHIẾN THẮNG LẦN 2 - CHUỖI CHIẾN THẮNG";
+            if(completionCount === 0) title = "CHỨNG NHẬN THAM GIA"; // Fallback
+
+            return (
+                <div className="max-w-2xl w-full mx-auto animate-fade-in pb-20">
+                    <div className="relative bg-[#fffdf5] rounded-xl shadow-2xl p-2 overflow-hidden border-8 border-double border-[#b48d52]">
+                        {/* Top Right Logo */}
+                        <div className="absolute top-5 right-5 z-20 flex flex-col items-center">
+                             <img src={ROBOKI_LOGO_URL} className="w-12 h-12 rounded-full border-2 border-[#b48d52] bg-white object-cover" />
+                             <span className="text-[10px] font-black text-[#b48d52] mt-1">ROBOKI AI</span>
+                        </div>
+
+                        <div className="border-2 border-[#b48d52]/30 p-8 flex flex-col items-center text-center mt-4">
+                            <h1 className="text-3xl font-black text-[#85603f] uppercase serif-font mb-2">THỬ TÀI VĂN HỌC</h1>
+                            <p className="text-[#85603f] italic mb-6">Trao tặng cho</p>
+                            <h2 className="text-5xl font-black text-[#d32f2f] serif-font mb-4">{user.name}</h2>
+                            <p className="text-xl font-bold text-slate-700 mb-6">{user.className} - {user.school}</p>
+                            
+                            <h3 className="text-2xl font-black text-[#1e3a8a] uppercase mb-6">{title}</h3>
+                            
+                            <div className="flex gap-4 mb-8">
+                                <div className="bg-yellow-100 border border-yellow-400 px-4 py-2 rounded-xl text-center"><div className="text-xs font-bold text-yellow-800 uppercase">Xếp loại</div><div className="text-2xl font-black text-red-700">{rank}</div></div>
+                                <div className="bg-blue-100 border border-blue-400 px-4 py-2 rounded-xl text-center"><div className="text-xs font-bold text-blue-800 uppercase">Điểm XP</div><div className="text-2xl font-black text-blue-900">{xp}</div></div>
+                            </div>
+                            
+                            <div className="flex justify-between w-full text-xs text-[#85603f] mt-4 border-t border-[#b48d52]/50 pt-2 items-end">
+                                {/* Bottom Left: Logo + Auto Confirm */}
+                                <div className="flex flex-col items-center">
+                                     <img src={GAME_LOGO_URL} className="w-16 h-16 rounded-full border-2 border-[#b48d52] object-cover shadow-sm mb-2" />
+                                     <div className="border-t border-[#b48d52] pt-1 w-full text-center font-bold uppercase tracking-wider text-[10px]">Xác nhận tự động</div>
+                                </div>
+                                <div className="text-center"><b>Giáo viên phụ trách</b><br/>Đặng Thị Bích Hài</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="mt-6 text-center">
+                        <button onClick={onRestart} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all">Làm lại để nâng hạng & Tích điểm</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- MAIN APP LOGIC (ĐIỀU KHIỂN CHÍNH) ---
+        const App = () => {
+            const [gameState, setGameState] = React.useState({ screen: 'INTRO', level: LevelType.LEVEL_1, questions: [], qIndex: 0, score: 0, user: {}, xp: 0 });
+            const [completionCount, setCompletionCount] = React.useState(parseInt(localStorage.getItem('roboki_completion_count')||0));
+            const [isMuted, setIsMuted] = React.useState(false);
+
+            // THUẬT TOÁN XÁO TRỘN CÂU HỎI VÀ ĐÁP ÁN (SHUFFLE)
+            const getShuffledQuestions = (lvl) => {
+                // 1. Lấy toàn bộ câu hỏi trong ngân hàng
+                const pool = QUESTION_POOL[lvl] || QUESTION_POOL[LevelType.LEVEL_1];
+                
+                // 2. Chọn ngẫu nhiên 5 câu
+                let selectedQuestions = [...pool].sort(() => Math.random() - 0.5).slice(0, 5);
+
+                // 3. Với mỗi câu hỏi, xáo trộn thứ tự 4 đáp án (A,B,C,D)
+                return selectedQuestions.map((q, idx) => {
+                    const originalCorrectAnswerText = q.options[q.correctIndex]; // Lưu nội dung đáp án đúng cũ
+                    
+                    // Xáo trộn mảng options
+                    const shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                    
+                    // Tìm vị trí mới của đáp án đúng
+                    const newCorrectIndex = shuffledOptions.indexOf(originalCorrectAnswerText);
+                    
+                    return {
+                        ...q,
+                        options: shuffledOptions,
+                        correctIndex: newCorrectIndex,
+                        id: `${lvl}-${Date.now()}-${idx}` // Tạo ID mới để React render lại
+                    };
+                });
+            };
+
+            const loadLevel = async (lvl) => {
+                setGameState(prev => ({ ...prev, screen: 'LOADING', level: lvl, qIndex: 0, score: 0, questions: [] }));
+                
+                // Giả lập thời gian tải (Loading) để trải nghiệm tốt hơn
+                setTimeout(() => {
+                    const randomizedQuestions = getShuffledQuestions(lvl);
+                    setGameState(prev => ({ ...prev, questions: randomizedQuestions, screen: 'LEVEL_INTRO' }));
+                }, 1000);
+            };
+
+            const handleAnswer = (correct) => { if(correct) setGameState(p => ({...p, score: p.score+1, xp: p.xp+10})); };
+            const handleNextQ = () => {
+                if(gameState.qIndex < gameState.questions.length-1) setGameState(p => ({...p, qIndex: p.qIndex+1}));
+                else setGameState(p => ({...p, screen: 'LEVEL_RESULT'}));
+            };
+            const handleNextStage = () => {
+                const { level } = gameState;
+                if(level === LevelType.LEVEL_1) loadLevel(LevelType.LEVEL_2);
+                else if(level === LevelType.LEVEL_2) loadLevel(LevelType.LEVEL_3);
+                else if(level === LevelType.LEVEL_3) {
+                    const newCount = completionCount + 1;
+                    setCompletionCount(newCount);
+                    localStorage.setItem('roboki_completion_count', newCount);
+                    setGameState(p => ({...p, screen: 'CERTIFICATE'}));
+                } else if (level === LevelType.SPECIAL) loadLevel(LevelType.GRADUATION);
+                else if (level === LevelType.GRADUATION) setGameState(p => ({...p, screen: 'CERTIFICATE'}));
+            };
+
+            const getRank = () => {
+                if(completionCount>=9) return CertificateRank.XUAT_SAC;
+                if(completionCount>=6) return CertificateRank.GIOI;
+                if(completionCount>=3) return CertificateRank.KHA;
+                return CertificateRank.DAT;
+            };
+
+            return (
+                <Layout isMuted={isMuted} onToggleMute={()=>setIsMuted(!isMuted)} xp={gameState.xp} userName={gameState.user.name}>
+                    {gameState.screen === 'INTRO' && <IntroScreen onStart={(u) => setGameState(p=>({...p, user: u, screen: 'ROADMAP'}))} />}
+                    {gameState.screen === 'ROADMAP' && <RoadmapScreen user={gameState.user} xp={gameState.xp} completionCount={completionCount} onContinue={()=>loadLevel(LevelType.LEVEL_1)} />}
+                    {gameState.screen === 'LOADING' && <div className="text-center mt-20 text-blue-600 font-black animate-pulse text-2xl">Đang tải dữ liệu...</div>}
+                    {gameState.screen === 'LEVEL_INTRO' && <LevelIntroScreen level={gameState.level} onStart={()=>setGameState(p=>({...p, screen: 'PLAYING'}))} />}
+                    {gameState.screen === 'PLAYING' && <QuizScreen level={gameState.level} questions={gameState.questions} questionIndex={gameState.qIndex} onAnswer={handleAnswer} onNext={handleNextQ} isMuted={isMuted} />}
+                    {gameState.screen === 'LEVEL_RESULT' && <LevelResultScreen score={gameState.score} total={gameState.questions.length} level={gameState.level} onNext={handleNextStage} onRetry={()=>loadLevel(gameState.level)} isMuted={isMuted} />}
+                    {gameState.screen === 'CERTIFICATE' && <CertificateScreen user={gameState.user} rank={getRank()} xp={gameState.xp} completionCount={completionCount} onRestart={()=>loadLevel(LevelType.LEVEL_1)} isMuted={isMuted} />}
+                </Layout>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
